@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--configuration: 为logback.xml配置文件的根节点,具有属性 scan,scanPeriod,debug-->
+<!--scan:    当此属性设置为true时，配置文件如果发生改变，将会被重新加载，默认值为true。-->
+<!--scanPeriod: 设置监测配置文件是否有修改的时间间隔，如果没有给出时间单位，默认单位是毫秒。当scan为true时，此属性生效。默认的时间间隔为1分钟。-->
+<!--debug: 当此属性设置为true时，将打印出logback内部日志信息，实时查看logback运行状态。默认值为false-->
+<configuration debug="false">
+
+    <!--contextName 表示工程的名称，唯一值-->
+    <contextName>apiexample_logBack</contextName>
+
+    <!--property 节点用来定义变量值，具有两个属性，name和value，后续的配置中可以通过 ${var} 来引用在property中定义的变量-->
+    <property name="LOG_HOME" value="/userdata1/logs/" />
+
+    <!--控制台输出-->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <!--  encoder 默认配置为PatternLayoutEncoder-->
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%level] [_logId: %X{_logId}] [_logUserId: %X{_logUserId}] [_projectName: %X{_projectName}] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!--日志输出到文件-->
+    <appender name="COMMONLOG_ROLLINGFILE"  class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!--日志文件输出的文件名-->
+            <FileNamePattern>${LOG_HOME}/commonLog-apiexample_%d{yyyy-MM-dd}.log</FileNamePattern>
+            <!--日志文件保留天数-->
+            <!--<MaxHistory>30</MaxHistory>-->
+        </rollingPolicy>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%d{MM-dd HH:mm:ss.SSS} [%-5level] [%X{_logId}] - [myUserLogId:%X{_logUserId}] - [%-30logger{20}] - %msg%n</pattern>
+        </encoder>
+        <!--日志文件最大的大小-->
+        <!--<triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">-->
+        <!--<MaxFileSize>10MB</MaxFileSize>-->
+        <!--</triggeringPolicy>-->
+    </appender>
+
+    <!--错误日志输出到文件-->
+    <appender name="ERRORLOG_ROLLINGFILE"  class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>${LOG_HOME}/errorLog-apiexample_%d{yyyy-MM-dd}.log</FileNamePattern>
+        </rollingPolicy>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{50} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!--日志发送到elk日志收集平台-->
+    <appender name="STASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>172.17.20.17:9100</destination>
+        <!-- encoder is required -->
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%level] [_logId: %X{_logId}] [_logUserId: %X{_logUserId}] [_projectName: %X{_projectName}] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+
+    <!--logger必须在appender后面-->
+    <logger name="com.company.example" level="DEBUG">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="COMMONLOG_ROLLINGFILE"/>
+        <appender-ref ref="STASH"/>
+    </logger>
+    <logger name="com.jtool" level="DEBUG">
+        <appender-ref ref="COMMONLOG_ROLLINGFILE"/>
+        <appender-ref ref="STASH"/>
+    </logger>
+    <logger name="com.company.example.controller.AppControllerAdvice" level="INFO">
+        <appender-ref ref="ERRORLOG_ROLLINGFILE"/>
+        <appender-ref ref="STASH"/>
+    </logger>
+
+
+</configuration>
